@@ -59,10 +59,10 @@ async function mergePr(octokit, owner, repo, pull_number, commit_title) {
 		});
 }
 async function createRelease(octokit, owner, repo, tag_name, name) {
-	// Wait 1 seconds between requests. Github is kinda slow sometimes.
-	await sleep(1000);
+	// Wait 10 seconds between requests. Github is kinda slow sometimes.
+	await sleep(10000);
 	await octokit
-		.request('PUT /repos/{owner}/{repo}/releases', {
+		.request('POST /repos/{owner}/{repo}/releases', {
 			owner,
 			repo,
 			tag_name,
