@@ -6,7 +6,7 @@
 
 const core = __nccwpck_require__(2186);
 
-module.exports = { createPr, approvePr };
+module.exports = { createPr, approvePr, mergePr, createRelease };
 
 async function createPr(octokit, owner, repo, title, head, base) {
 	await sleep(5000);
@@ -35,6 +35,33 @@ async function approvePr(octokit, owner, repo, pull_number) {
 			repo,
 			pull_number,
 			event: 'APPROVE',
+		})
+		.catch((error) => {
+			throw new Error(error);
+		});
+}
+
+async function mergePr(octokit, owner, repo, pull_number, commit_title) {
+	await sleep(5000);
+	await octokit
+		.request('PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge', {
+			owner,
+			repo,
+			pull_number,
+			commit_title,
+		})
+		.catch((error) => {
+			throw new Error(error);
+		});
+}
+async function createRelease(octokit, owner, repo, tag_name, name) {
+	await sleep(5000);
+	await octokit
+		.request('PUT /repos/{owner}/{repo}/releases', {
+			owner,
+			repo,
+			tag_name,
+			name,
 		})
 		.catch((error) => {
 			throw new Error(error);
@@ -25815,7 +25842,7 @@ const { GitHub, getOctokitOptions } = __nccwpck_require__(3030);
 // Internal dependencies
 const { removeFiles, downloadZip, extractZip, getPluginVersion } = __nccwpck_require__(4024);
 const { cloneRepo, areFilesChanged, pushRepo, createBranch } = __nccwpck_require__(3374);
-const { createPr, approvePr } = __nccwpck_require__(8119);
+const { createPr, approvePr, mergePr, createRelease } = __nccwpck_require__(8119);
 
 async function run() {
 	try {
@@ -25880,6 +25907,8 @@ async function run() {
 			if (approval_token.length && approval_token !== '') {
 				const secondOctokit = new octokit(getOctokitOptions(approval_token));
 				await approvePr(secondOctokit, owner, repo, pr);
+				await mergePr(secondOctokit, owner, repo, pr, commitMessage);
+				await createRelease(secondOctokit, owner, repo, version);
 			}
 
 			// Output the version number, so we can use it to create tags.
