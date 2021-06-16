@@ -6,11 +6,12 @@
 
 const core = __nccwpck_require__(2186);
 
-module.exports = { createPr };
+module.exports = { createPr, approvePr };
 
 async function createPr(octokit, owner, repo, title, head, base) {
 	let retries = 5;
 	let count = 0;
+	let pr = undefined;
 
 	while (retries-- > 0) {
 		count++;
@@ -19,13 +20,16 @@ async function createPr(octokit, owner, repo, title, head, base) {
 			await sleep(5000);
 			core.info(`PR creation attempt ${count}`);
 
-			await octokit
+			pr = await octokit
 				.request(`POST /repos/{owner}/{repo}/pulls`, {
 					owner,
 					repo,
 					title,
 					head,
 					base,
+				})
+				.then((res) => {
+					return res.data.number;
 				})
 				.catch((error) => {
 					throw new Error(error);
@@ -36,14 +40,49 @@ async function createPr(octokit, owner, repo, title, head, base) {
 			//if error is different than rate limit/timeout related we should throw error as it is very probable that
 			//next PR will also fail anyway, we should let user know early in the process by failing the action
 			if (error.message !== 'was submitted too quickly') {
-				throw new Error(`Unable to create a PR: ${error}`);
+				core.setFailed(`Unable to create a PR: ${error}`);
 			}
 		}
 	}
 
-	function sleep(ms) {
-		return new Promise((resolve) => setTimeout(resolve, ms));
+	return pr;
+}
+
+async function approvePr(octokit, owner, repo, pr) {
+	let retries = 5;
+	let count = 0;
+
+	while (retries-- > 0) {
+		count++;
+		try {
+			core.info('Waiting 5sec before approve attempt');
+			await sleep(5000);
+			core.info(`approve attempt attempt ${count}`);
+
+			await octokit
+				.request(`POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews`, {
+					owner,
+					repo,
+					pull_number,
+					event: 'APPROVE',
+				})
+				.catch((error) => {
+					throw new Error(error);
+				});
+
+			retries = 0;
+		} catch (error) {
+			//if error is different than rate limit/timeout related we should throw error as it is very probable that
+			//next PR will also fail anyway, we should let user know early in the process by failing the action
+			if (error.message !== 'was submitted too quickly') {
+				core.setFailed(`Unable to approve PR: ${error}`);
+			}
+		}
 	}
+}
+
+async function sleep(ms) {
+	return await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 
@@ -25822,6 +25861,7 @@ async function run() {
 	try {
 		// Action inputs
 		const token = core.getInput('github_token', { required: true });
+		const approval_token = core.getInput('approval_github_token');
 		const committerUsername = core.getInput('committer_username');
 		const committerEmail = core.getInput('committer_email');
 		const source = core.getInput('source', { required: true });
@@ -25874,7 +25914,13 @@ async function run() {
 				git
 			);
 			core.info('Creating Pull request');
-			await createPr(myOctokit, owner, repo, commitMessage, newBranch, branch);
+			const pr = await createPr(myOctokit, owner, repo, commitMessage, newBranch, branch);
+
+			// If an approval token is supplied, we will go ahead and autoapprove the PR.
+			if (approval_token.length && approval_token !== '') {
+				const secondOctokit = new octokit(getOctokitOptions(approval_token));
+				await approvePr(secondOctokit, owner, repo, pr);
+			}
 
 			// Output the version number, so we can use it to create tags.
 			core.setOutput('version', version);
