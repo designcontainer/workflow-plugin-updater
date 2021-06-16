@@ -30,8 +30,8 @@ async function createPr(octokit, owner, repo, title, head, base) {
 }
 
 async function approvePr(octokit, owner, repo, pull_number) {
-	// Wait 5 seconds between requests. Github is kinda slow sometimes.
-	await sleep(5000);
+	// Wait 1 seconds between requests. Github is kinda slow sometimes.
+	await sleep(1000);
 	await octokit
 		.request(`POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews`, {
 			owner,
@@ -45,8 +45,8 @@ async function approvePr(octokit, owner, repo, pull_number) {
 }
 
 async function mergePr(octokit, owner, repo, pull_number, commit_title) {
-	// Wait 5 seconds between requests. Github is kinda slow sometimes.
-	await sleep(5000);
+	// Wait 1 seconds between requests. Github is kinda slow sometimes.
+	await sleep(1000);
 	await octokit
 		.request('PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge', {
 			owner,
@@ -59,8 +59,8 @@ async function mergePr(octokit, owner, repo, pull_number, commit_title) {
 		});
 }
 async function createRelease(octokit, owner, repo, tag_name, name) {
-	// Wait 5 seconds between requests. Github is kinda slow sometimes.
-	await sleep(5000);
+	// Wait 1 seconds between requests. Github is kinda slow sometimes.
+	await sleep(1000);
 	await octokit
 		.request('PUT /repos/{owner}/{repo}/releases', {
 			owner,
