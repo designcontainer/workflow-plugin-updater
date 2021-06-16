@@ -21,9 +21,6 @@ inputs:
     source:
         description: 'Download source URL'
         required: true
-    query:
-        description: 'URL parameters'
-        required: false
 runs:
     using: node12
     main: dist/index.js
