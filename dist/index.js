@@ -25886,12 +25886,13 @@ async function run() {
 
 		core.info('Get version number');
 		const version = await getPluginVersion(dir);
+		const pVersion = 'v' + version;
 
 		core.info('Check for differences');
 		if (await areFilesChanged(git)) {
 			core.info(`Creating branch`);
 			const newBranch = `release/v${version}`;
-			const commitMessage = `Updated plugin to version: v${version}`;
+			const commitMessage = `Updated plugin to version: ${version}`;
 			await createBranch(newBranch, git);
 
 			core.info(`Pushing to ${newBranch}.`);
@@ -25919,7 +25920,7 @@ async function run() {
 				await mergePr(myOctokit, owner, repo, pr, commitMessage);
 
 				core.info('Create release');
-				await createRelease(myOctokit, owner, repo, version);
+				await createRelease(myOctokit, owner, repo, pVersion, pVersion);
 			}
 
 			// Output the version number, so we can use it to create tags.
@@ -25931,7 +25932,6 @@ async function run() {
 			core.info('No changes found. Finishing up.');
 			core.setOutput('update', false);
 		}
-
 		core.endGroup();
 	} catch (error) {
 		core.setFailed(`Action failed because of: ${error}`);
