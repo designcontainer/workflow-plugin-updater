@@ -28,7 +28,7 @@ async function createPr(octokit, owner, repo, title, head, base) {
 	return pr;
 }
 
-async function approvePr(octokit, owner, repo, pr) {
+async function approvePr(octokit, owner, repo, pull_number) {
 	await octokit
 		.request(`POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews`, {
 			owner,
