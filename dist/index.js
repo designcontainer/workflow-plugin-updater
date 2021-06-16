@@ -6,11 +6,9 @@
 
 const core = __nccwpck_require__(2186);
 
-module.exports = { createPr, approvePr, mergePr, createRelease };
+module.exports = { createPr, approvePr, mergePr, deleteRef, createRelease };
 
 async function createPr(octokit, owner, repo, title, head, base) {
-	// Wait 5 seconds between requests. Github is kinda slow sometimes.
-	await sleep(5000);
 	const pr = await octokit
 		.request(`POST /repos/{owner}/{repo}/pulls`, {
 			owner,
@@ -30,8 +28,6 @@ async function createPr(octokit, owner, repo, title, head, base) {
 }
 
 async function approvePr(octokit, owner, repo, pull_number) {
-	// Wait 1 seconds between requests. Github is kinda slow sometimes.
-	await sleep(1000);
 	await octokit
 		.request(`POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews`, {
 			owner,
@@ -44,9 +40,19 @@ async function approvePr(octokit, owner, repo, pull_number) {
 		});
 }
 
+async function deleteRef(octokit, owner, repo, ref) {
+	await octokit
+		.request(`DELETE /repos/{owner}/{repo}/git/refs/{ref}`, {
+			owner,
+			repo,
+			ref,
+		})
+		.catch((error) => {
+			throw new Error(error);
+		});
+}
+
 async function mergePr(octokit, owner, repo, pull_number, commit_title) {
-	// Wait 1 seconds between requests. Github is kinda slow sometimes.
-	await sleep(1000);
 	await octokit
 		.request('PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge', {
 			owner,
@@ -59,8 +65,6 @@ async function mergePr(octokit, owner, repo, pull_number, commit_title) {
 		});
 }
 async function createRelease(octokit, owner, repo, tag_name, name) {
-	// Wait 10 seconds between requests. Github is kinda slow sometimes.
-	await sleep(10000);
 	await octokit
 		.request('POST /repos/{owner}/{repo}/releases', {
 			owner,
@@ -71,10 +75,6 @@ async function createRelease(octokit, owner, repo, tag_name, name) {
 		.catch((error) => {
 			throw new Error(error);
 		});
-}
-
-async function sleep(ms) {
-	return await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 
@@ -171,6 +171,7 @@ module.exports = {
 	removeFiles,
 	extractZip,
 	getPluginVersion,
+	sleep,
 };
 
 /**
@@ -277,6 +278,10 @@ async function getPluginVersion(dir) {
 	}
 
 	return version.trim();
+}
+
+async function sleep(ms) {
+	return await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 
@@ -25845,9 +25850,9 @@ const { retry } = __nccwpck_require__(6298);
 const { GitHub, getOctokitOptions } = __nccwpck_require__(3030);
 
 // Internal dependencies
-const { removeFiles, downloadZip, extractZip, getPluginVersion } = __nccwpck_require__(4024);
+const { removeFiles, downloadZip, extractZip, getPluginVersion, sleep } = __nccwpck_require__(4024);
 const { cloneRepo, areFilesChanged, pushRepo, createBranch } = __nccwpck_require__(3374);
-const { createPr, approvePr, mergePr, createRelease } = __nccwpck_require__(8119);
+const { createPr, approvePr, mergePr, deleteReference, createRelease } = __nccwpck_require__(8119);
 
 async function run() {
 	try {
@@ -25913,13 +25918,22 @@ async function run() {
 			if (approval_token.length && approval_token !== '') {
 				const secondOctokit = new octokit(getOctokitOptions(approval_token));
 
+				// Adding some delays because GitHub can be a bit janky.
 				core.info('Approve Pull request');
+				sleep(5000);
 				await approvePr(secondOctokit, owner, repo, pr);
 
 				core.info('Merge Pull request');
+				sleep(1000);
 				await mergePr(myOctokit, owner, repo, pr, commitMessage);
 
+				core.info(`Delete branch: ${newBranch}.`);
+				sleep(1000);
+				const ref = `refs/heads/${newBranch}`;
+				await deleteReference(myOctokit, owner, repo, ref);
+
 				core.info('Create release');
+				sleep(5000);
 				await createRelease(myOctokit, owner, repo, pVersion, pVersion);
 			}
 
