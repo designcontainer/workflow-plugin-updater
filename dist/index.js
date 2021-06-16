@@ -9,6 +9,7 @@ const core = __nccwpck_require__(2186);
 module.exports = { createPr, approvePr, mergePr, createRelease };
 
 async function createPr(octokit, owner, repo, title, head, base) {
+	// Wait 5 seconds between requests. Github is kinda slow sometimes.
 	await sleep(5000);
 	const pr = await octokit
 		.request(`POST /repos/{owner}/{repo}/pulls`, {
@@ -29,6 +30,8 @@ async function createPr(octokit, owner, repo, title, head, base) {
 }
 
 async function approvePr(octokit, owner, repo, pull_number) {
+	// Wait 5 seconds between requests. Github is kinda slow sometimes.
+	await sleep(5000);
 	await octokit
 		.request(`POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews`, {
 			owner,
@@ -42,6 +45,7 @@ async function approvePr(octokit, owner, repo, pull_number) {
 }
 
 async function mergePr(octokit, owner, repo, pull_number, commit_title) {
+	// Wait 5 seconds between requests. Github is kinda slow sometimes.
 	await sleep(5000);
 	await octokit
 		.request('PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge', {
@@ -55,6 +59,7 @@ async function mergePr(octokit, owner, repo, pull_number, commit_title) {
 		});
 }
 async function createRelease(octokit, owner, repo, tag_name, name) {
+	// Wait 5 seconds between requests. Github is kinda slow sometimes.
 	await sleep(5000);
 	await octokit
 		.request('PUT /repos/{owner}/{repo}/releases', {
@@ -25906,14 +25911,22 @@ async function run() {
 			// If an approval token is supplied, we will go ahead and autoapprove the PR.
 			if (approval_token.length && approval_token !== '') {
 				const secondOctokit = new octokit(getOctokitOptions(approval_token));
+
+				core.info('Approve Pull request');
 				await approvePr(secondOctokit, owner, repo, pr);
-				await mergePr(secondOctokit, owner, repo, pr, commitMessage);
-				await createRelease(secondOctokit, owner, repo, version);
+
+				core.info('Merge Pull request');
+				await mergePr(myOctokit, owner, repo, pr, commitMessage);
+
+				core.info('Create release');
+				await createRelease(myOctokit, owner, repo, version);
 			}
 
 			// Output the version number, so we can use it to create tags.
 			core.setOutput('version', version);
 			core.setOutput('update', true);
+
+			core.info(`Finished updating plugin. New version is: ${version}`);
 		} else {
 			core.info('No changes found. Finishing up.');
 			core.setOutput('update', false);
