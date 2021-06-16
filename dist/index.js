@@ -150,12 +150,12 @@ module.exports = {
  * @param {string} query URL Parameters.
  * @return {string} Returns a string with the zip file path.
  */
-async function downloadZip(dir, url, query = '') {
+async function downloadZip(dir, url) {
 	const file = path.join(dir, 'dist.zip');
 
 	return await axios
 		.request({
-			url: url + query,
+			url,
 			method: 'GET',
 			responseType: 'arraybuffer',
 		})
@@ -197,40 +197,26 @@ async function removeFiles(dir, exceptions) {
  * @param {string} zip A zip file
  * @param {string} output The output path
  */
-async function extractZip(zip, output, repoName) {
+async function extractZip(zip, output) {
 	try {
 		const before = fs.readdirSync(output).filter((e) => e !== path.basename(zip));
-
-		core.info('Test check 02-01');
-		core.info(before);
-
 		// Unzip and delete the zip file
 		await extract(zip, { dir: output });
 		fs.unlinkSync(zip);
-
 		const after = fs.readdirSync(output);
 
-		core.info('Test check 02-02');
-		core.info(after);
-
-		// This means that the plugin files are not wrapped in a folder
+		// If the total new files is more than 1,
+		// we assume that the plugin files are not wrapped in a folder.
 		const totalNewFiles = after.length - before.length;
-		core.info('totalNewFiles is:');
-		core.info(totalNewFiles);
 		if (totalNewFiles > 1) return;
 
 		// Find the difference between the two arrays to find the new folder
 		const diff = after.filter((x) => before.indexOf(x) === -1);
-
-		core.info('The diff:');
-		core.info(diff);
-
 		const wrapperDir = path.join(output, diff[0]);
 
-		core.info('The wrapper dir is:');
-		core.info(wrapperDir);
-
+		// Copy the contents of the wrapper folder to root.
 		fs.copySync(wrapperDir, output);
+		// Remove the wrapper folder.
 		rimraf.sync(wrapperDir);
 	} catch (error) {
 		core.setFailed(`Action failed because of: ${error}`);
@@ -25819,14 +25805,13 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
 // External dependencies
-const { mkdir } = __nccwpck_require__(5747).promises;
 const fs = __nccwpck_require__(5747);
 const path = __nccwpck_require__(5622);
+const rimraf = __nccwpck_require__(4959);
+const simpleGit = __nccwpck_require__(1477);
 const core = __nccwpck_require__(2186);
 const { retry } = __nccwpck_require__(6298);
 const { GitHub, getOctokitOptions } = __nccwpck_require__(3030);
-const simpleGit = __nccwpck_require__(1477);
-const rimraf = __nccwpck_require__(4959);
 
 // Internal dependencies
 const { removeFiles, downloadZip, extractZip, getPluginVersion } = __nccwpck_require__(4024);
@@ -25840,7 +25825,6 @@ async function run() {
 		const committerUsername = core.getInput('committer_username');
 		const committerEmail = core.getInput('committer_email');
 		const source = core.getInput('source', { required: true });
-		const query = core.getInput('query');
 
 		// Github envs
 		const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
@@ -25851,50 +25835,28 @@ async function run() {
 		const exceptions = ['.git', '.github']; // Files that shouldn't be touched
 
 		core.startGroup('Fetching latest plugin');
-		core.info('Test check init');
-		core.info(fs.readdirSync(process.cwd()));
 
 		core.info('Create working dir');
 		const dir = path.join(process.cwd(), 'clones', repo);
-		if (fs.existsSync(dir)) rimraf.sync(dir);
-		await mkdir(dir, { recursive: true });
+		if (fs.existsSync(dir)) rimraf.sync(dir); // Delete the folder if it already exists for some reason.
+		fs.mkdirSync(dir, { recursive: true });
 
 		core.info('Clone repo and cleanup repo');
 		const git = simpleGit({ baseDir: dir });
 		await cloneRepo(dir, owner, repo, token, git);
 		await removeFiles(dir, exceptions);
 
-		core.info('Test check 01');
-		core.info(fs.readdirSync(process.cwd()));
-		core.info(fs.readdirSync(dir));
-
 		core.info('Download zip');
-		const zip = await downloadZip(dir, source, query);
-
-		core.info('Test check 02');
-		core.info(fs.readdirSync(process.cwd()));
-		core.info(fs.readdirSync(dir));
+		const zip = await downloadZip(dir, source);
 
 		core.info('Extract zip');
 		await extractZip(zip, dir);
 
-		core.info('Test check 03');
-		core.info(fs.readdirSync(process.cwd()));
-		core.info(fs.readdirSync(dir));
-
 		core.info('Get version number');
 		const version = await getPluginVersion(dir);
 
-		core.info('Test check 04');
-		core.info(fs.readdirSync(process.cwd()));
-		core.info(fs.readdirSync(dir));
-
 		core.info('Check for differences');
 		if (await areFilesChanged(git)) {
-			core.info('Test check 05');
-			core.info(fs.readdirSync(process.cwd()));
-			core.info(fs.readdirSync(dir));
-
 			core.info(`Creating branch`);
 			const newBranch = `release/v${version}`;
 			const commitMessage = `Updated plugin to version: v${version}`;
@@ -25913,6 +25875,9 @@ async function run() {
 			);
 			core.info('Creating Pull request');
 			await createPr(myOctokit, owner, repo, commitMessage, newBranch, branch);
+
+			// Output the version number, so we can use it to create tags.
+			core.setOutput('version', version);
 		} else {
 			core.info('No changes found. Finishing up.');
 		}
