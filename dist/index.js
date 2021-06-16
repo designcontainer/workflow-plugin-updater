@@ -9,76 +9,36 @@ const core = __nccwpck_require__(2186);
 module.exports = { createPr, approvePr };
 
 async function createPr(octokit, owner, repo, title, head, base) {
-	let retries = 5;
-	let count = 0;
-	let pr = undefined;
-
-	while (retries-- > 0) {
-		count++;
-		try {
-			core.info('Waiting 5sec before PR creation');
-			await sleep(5000);
-			core.info(`PR creation attempt ${count}`);
-
-			pr = await octokit
-				.request(`POST /repos/{owner}/{repo}/pulls`, {
-					owner,
-					repo,
-					title,
-					head,
-					base,
-				})
-				.then((res) => {
-					return res.data.number;
-				})
-				.catch((error) => {
-					throw new Error(error);
-				});
-
-			retries = 0;
-		} catch (error) {
-			//if error is different than rate limit/timeout related we should throw error as it is very probable that
-			//next PR will also fail anyway, we should let user know early in the process by failing the action
-			if (error.message !== 'was submitted too quickly') {
-				core.setFailed(`Unable to create a PR: ${error}`);
-			}
-		}
-	}
-
+	await sleep(5000);
+	const pr = await octokit
+		.request(`POST /repos/{owner}/{repo}/pulls`, {
+			owner,
+			repo,
+			title,
+			head,
+			base,
+		})
+		.then((res) => {
+			return res.data.number;
+		})
+		.catch((error) => {
+			throw new Error(error);
+		});
+	core.info(`Submitted PR number: ${pr}`);
 	return pr;
 }
 
 async function approvePr(octokit, owner, repo, pr) {
-	let retries = 5;
-	let count = 0;
-
-	while (retries-- > 0) {
-		count++;
-		try {
-			core.info('Waiting 5sec before approve attempt');
-			await sleep(5000);
-			core.info(`approve attempt attempt ${count}`);
-
-			await octokit
-				.request(`POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews`, {
-					owner,
-					repo,
-					pull_number,
-					event: 'APPROVE',
-				})
-				.catch((error) => {
-					throw new Error(error);
-				});
-
-			retries = 0;
-		} catch (error) {
-			//if error is different than rate limit/timeout related we should throw error as it is very probable that
-			//next PR will also fail anyway, we should let user know early in the process by failing the action
-			if (error.message !== 'was submitted too quickly') {
-				core.setFailed(`Unable to approve PR: ${error}`);
-			}
-		}
-	}
+	await octokit
+		.request(`POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews`, {
+			owner,
+			repo,
+			pull_number,
+			event: 'APPROVE',
+		})
+		.catch((error) => {
+			throw new Error(error);
+		});
 }
 
 async function sleep(ms) {
@@ -25855,7 +25815,7 @@ const { GitHub, getOctokitOptions } = __nccwpck_require__(3030);
 // Internal dependencies
 const { removeFiles, downloadZip, extractZip, getPluginVersion } = __nccwpck_require__(4024);
 const { cloneRepo, areFilesChanged, pushRepo, createBranch } = __nccwpck_require__(3374);
-const { createPr } = __nccwpck_require__(8119);
+const { createPr, approvePr } = __nccwpck_require__(8119);
 
 async function run() {
 	try {
@@ -25924,8 +25884,10 @@ async function run() {
 
 			// Output the version number, so we can use it to create tags.
 			core.setOutput('version', version);
+			core.setOutput('update', true);
 		} else {
 			core.info('No changes found. Finishing up.');
+			core.setOutput('update', false);
 		}
 
 		core.endGroup();
