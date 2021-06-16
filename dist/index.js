@@ -25852,7 +25852,7 @@ const { GitHub, getOctokitOptions } = __nccwpck_require__(3030);
 // Internal dependencies
 const { removeFiles, downloadZip, extractZip, getPluginVersion, sleep } = __nccwpck_require__(4024);
 const { cloneRepo, areFilesChanged, pushRepo, createBranch } = __nccwpck_require__(3374);
-const { createPr, approvePr, mergePr, deleteReference, createRelease } = __nccwpck_require__(8119);
+const { createPr, approvePr, mergePr, deleteRef, createRelease } = __nccwpck_require__(8119);
 
 async function run() {
 	try {
@@ -25920,20 +25920,20 @@ async function run() {
 
 				// Adding some delays because GitHub can be a bit janky.
 				core.info('Approve Pull request');
-				sleep(5000);
+				await sleep(5000);
 				await approvePr(secondOctokit, owner, repo, pr);
 
 				core.info('Merge Pull request');
-				sleep(1000);
+				await sleep(1000);
 				await mergePr(myOctokit, owner, repo, pr, commitMessage);
 
 				core.info(`Delete branch: ${newBranch}.`);
-				sleep(1000);
+				await sleep(1000);
 				const ref = `refs/heads/${newBranch}`;
-				await deleteReference(myOctokit, owner, repo, ref);
+				await deleteRef(myOctokit, owner, repo, ref);
 
 				core.info('Create release');
-				sleep(5000);
+				await sleep(5000);
 				await createRelease(myOctokit, owner, repo, pVersion, pVersion);
 			}
 
