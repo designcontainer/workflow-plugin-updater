@@ -59,6 +59,7 @@ async function mergePr(octokit, owner, repo, pull_number, commit_title) {
 			repo,
 			pull_number,
 			commit_title,
+			merge_method: 'squash',
 		})
 		.catch((error) => {
 			throw new Error(error);

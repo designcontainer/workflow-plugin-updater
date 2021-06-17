@@ -6,9 +6,12 @@ inputs:
             It cannot be the default GitHub Actions token GITHUB_TOKEN. GitHub Action token's permissions are limited to the repository that contains your workflows.
             Provide token of the user that has rights to push to the repos that this action is suppose to update.
         required: true
+    source:
+        description: 'Download URL for getting plugin source zip.'
+        required: true
     approval_github_token:
         description: >
-            This token is used for auto approving pull requests.
+            Secondary token used for auto approving pull requests. Without this token, PR's will not get autoapproved and merged.
         required: false
     committer_username:
         description: >
@@ -22,9 +25,7 @@ inputs:
             In the format `noreply@github.com`.
         default: noreply@github.com
         required: false
-    source:
-        description: 'Download source URL'
-        required: true
+
 runs:
     using: node12
     main: dist/index.js
