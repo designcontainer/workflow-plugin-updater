@@ -25869,7 +25869,7 @@ async function run() {
 
 		const octokit = GitHub.plugin(retry);
 		const myOctokit = new octokit(getOctokitOptions(token));
-		const exceptions = ['.git', '.github']; // Files that shouldn't be touched
+		const exceptions = ['.git', '.github', 'composer.json']; // Files that shouldn't be touched
 
 		core.startGroup('Fetching latest plugin');
 
