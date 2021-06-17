@@ -94,9 +94,7 @@ module.exports = {
 };
 
 /**
- * Clone a repo
- *
- * @param {String} repo The repo you want to clone.
+ * Git clone
  */
 async function cloneRepo(dir, owner, repo, token, git) {
 	const url = getGitUrl(token, owner, repo);
@@ -105,8 +103,6 @@ async function cloneRepo(dir, owner, repo, token, git) {
 
 /**
  * Git push
- *
- * @param {String} repo The repo you want to clone.
  */
 async function pushRepo(
 	token,
@@ -133,8 +129,7 @@ function getGitUrl(token, owner, repo) {
 
 /**
  * Check if files are changed
- *
- * @param {String} repo The repo you want to clone.
+ * Git add & git status
  */
 async function areFilesChanged(git) {
 	await git.add('./*');
@@ -146,8 +141,7 @@ async function areFilesChanged(git) {
 }
 
 /**
- * Checkout to branch
- *
+ * Git checkout -b branchName
  */
 async function createBranch(branchName, git) {
 	return await git.checkout(`-b${branchName}`);
@@ -281,6 +275,11 @@ async function getPluginVersion(dir) {
 	return version.trim();
 }
 
+/**
+ * Async delay
+ *
+ * @param {string} ms Amout of milliseconds to delat/sleep.
+ */
 async function sleep(ms) {
 	return await new Promise((resolve) => setTimeout(resolve, ms));
 }
