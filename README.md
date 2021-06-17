@@ -5,10 +5,39 @@ A workflow for updating/syncing premium plugins automatically in a repo.
 ## How it works
 
 The workflow will download and extract the zip file given from your source URL. The changes will get compared to the earlier commit. If changes exist, a new branch will be created. The changes will then get pushed, and a PR is submitted.
+
 If a secondary GitHub token is provided in the input of `approval_github_token`, the PR will get automatically approved, merged, and a Release and tag will be created.
+
 [See diagram](#Diagram) for further details.
 
-### Configuration
+## Example GitHub Action workflow
+
+```yml
+name: Update plugin on schedule
+
+on:
+    schedule:
+        # Runs every day at 7am UTC
+        - cron: '0 7 * * *'
+
+jobs:
+    replicate_changes:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v2
+            - name: Update plugin from soruce
+              uses: designcontainer/workflow-plugin-updater@master
+              with:
+                  github_token: ${{ secrets.BOT_TOKEN }}
+                  approval_github_token: ${{ secrets.GITHUB_TOKEN }}
+                  committer_username: web-flow
+                  committer_email: noreply@github.com
+                  source: https://example.com/plugin/download?key=${{ secrets.PLUGIN_TOKEN }}
+```
+
+## Configuration
 
 | Name                    | Descripion                                                                                                                                                         | Required | Default            |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | ------------------ |
