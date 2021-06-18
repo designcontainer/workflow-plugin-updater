@@ -51,4 +51,4 @@ jobs:
 
 ## Diagram
 
-![plugin-updater diagram](https://user-images.githubusercontent.com/25268506/122596088-abf47400-d069-11eb-88ea-aea92fba845c.png)
+![plugin-updater diagram](https://user-images.githubusercontent.com/25268506/122596266-e1995d00-d069-11eb-8120-c9a259e42772.png)
