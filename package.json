@@ -1,7 +1,7 @@
 {
-  "name": "wpe-install-by-branch",
-  "version": "0.5.0",
-  "description": "Tbd",
+  "name": "workflow-plugin-updater",
+  "version": "1.1.0",
+  "description": "A workflow for updating/syncing premium plugins automatically in a repo.",
   "main": "lib/index.js",
   "scripts": {
     "start": "rimraf ./clones && node lib/index.js",
@@ -19,14 +19,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/designcontainer/wpe-install-by-branch.git"
+    "url": "git+https://github.com/designcontainer/workflow-plugin-updater.git"
   },
   "author": "Rostislav Melkumyan <rosti@designcontainer.no>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/designcontainer/wpe-install-by-branch/issues"
+    "url": "https://github.com/designcontainer/workflow-plugin-updater/issues"
   },
-  "homepage": "https://github.com/designcontainer/wpe-install-by-branch#readme",
+  "homepage": "https://github.com/designcontainer/workflow-plugin-updater#readme",
   "dependencies": {
     "@actions/core": "^1.2.6",
     "@actions/github": "^4.0.0",
