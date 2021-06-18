@@ -34,6 +34,7 @@ jobs:
                   approval_github_token: ${{ secrets.GITHUB_TOKEN }}
                   committer_username: web-flow
                   committer_email: noreply@github.com
+                  composer_installer: '^1.9'
                   source: https://example.com/plugin/download?key=${{ secrets.PLUGIN_TOKEN }}
 ```
 
@@ -43,10 +44,11 @@ jobs:
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | ------------------ |
 | `github_token`          | Token to use GitHub API. It must have "repo" and "workflow" scopes so it can push to repo and edit workflows.                                                      | true     | -                  |
 | `source`                | Download URL for getting plugin source zip.                                                                                                                        | true     | -                  |
+| `composer_installer`    | The composer installer version .                                                                                                                                   | true     | -                  |
 | `approval_github_token` | Secondary token used for auto approving pull requests. Without this token, PR's will not get autoapproved and merged.                                              | false    | -                  |
 | `committer_username`    | The username (not display name) of the committer that will be used in the commit of changes in the workflow file in specific repository. In the format `web-flow`. | false    | web-flow           |
 | `committer_email`       | The email of the committer that will be used in the commit of changes in the workflow file in specific repository. In the format `noreply@github.com`.             | false    | noreply@github.com |
 
 ## Diagram
 
-![plugin-updater diagram](https://user-images.githubusercontent.com/25268506/122348486-81ac9480-cf4b-11eb-941d-1c4a48f32cef.png)
+![plugin-updater diagram](https://user-images.githubusercontent.com/25268506/122596088-abf47400-d069-11eb-88ea-aea92fba845c.png)

@@ -125,7 +125,7 @@ async function generateComposer(dir, installer, owner, repo, p) {
 		],
 	};
 
-	json = JSON.stringify(composer);
+	json = JSON.stringify(composer, null, 2);
 	fs.writeFileSync(file, json);
 }
 
