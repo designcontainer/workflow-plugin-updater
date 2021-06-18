@@ -81,6 +81,57 @@ async function createRelease(octokit, owner, repo, tag_name, name) {
 
 /***/ }),
 
+/***/ 6805:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const fs = __nccwpck_require__(5747);
+const path = __nccwpck_require__(5622);
+
+module.exports = {
+	generateComposer,
+	doesComposerExist,
+};
+
+/**
+ * Check if composer files exist
+ */
+async function doesComposerExist(dir) {
+	const file = path.join(dir, 'composer.json');
+	return fs.existsSync(file);
+}
+
+/**
+ * Generate composer file
+ */
+async function generateComposer(dir, installer, owner, repo, p) {
+	const file = path.join(dir, 'composer.json');
+	const name = `${owner}/${repo}`;
+	const type = 'wordpress-plugin';
+
+	const composer = {
+		name,
+		...(p.description && { description: p.description }),
+		...(p.homepage && { homepage: p.homepage }),
+		type,
+		require: {
+			'composer/installers': installer,
+		},
+		...(p.license && { license: p.license }),
+		authors: [
+			{
+				...(p.author && { name: p.author }),
+				...(p.authorUri && { homepage: p.authorUri }),
+			},
+		],
+	};
+
+	json = JSON.stringify(composer);
+	fs.writeFileSync(file, json);
+}
+
+
+/***/ }),
+
 /***/ 3374:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -165,7 +216,7 @@ module.exports = {
 	downloadZip,
 	removeFiles,
 	extractZip,
-	getPluginVersion,
+	getPluginInfo,
 	sleep,
 };
 
@@ -251,28 +302,60 @@ async function extractZip(zip, output) {
 }
 
 /**
- * Get the version of a Wordpress plugin
+ * Get the info of a Wordpress plugin
  *
  * @param {string} dir The plugin directory
- * @return {string} Plugin version
+ * @return {Object} Plugin information
+ * @return {Object.name} Plugin Name
+ * @return {Object.uri} Plugin Uri
+ * @return {Object.description} Plugin Description
+ * @return {Object.version} Plugin Version
+ * @return {Object.author} Plugin Author
+ * @return {Object.authorUri} Plugin Author Uri
+ * @return {Object.textDomain} Plugin Text Domain
  */
-async function getPluginVersion(dir) {
+async function getPluginInfo(dir) {
 	files = fs.readdirSync(dir);
 
-	let version = uuidv4();
+	let pluginData = undefined;
 
 	for (let i = 0; i < files.length; i++) {
 		if (path.extname(files[i]) == '.php') {
 			let absFile = path.join(dir, files[i]);
 			let content = fs.readFileSync(absFile).toString();
 
-			if (content.includes('Plugin Name:') && content.includes('Version:')) {
-				version = content.split('Version:')[1].split(/\r?\n/)[0];
+			if (content.includes('Plugin Name:')) {
+				pluginData = {
+					name: getStringAfterColon(content, 'Plugin Name'),
+					uri: getStringAfterColon(content, 'Plugion URI'),
+					description: getStringAfterColon(content, 'Description'),
+					version: getStringAfterColon(content, 'Version'),
+					author: getStringAfterColon(content, 'Author'),
+					authorUri: getStringAfterColon(content, 'Author URI'),
+					textDomain: getStringAfterColon(content, 'Text Domain'),
+					domainPath: getStringAfterColon(content, 'Domain Path'),
+				};
+				break;
 			}
 		}
 	}
 
-	return version.trim();
+	return pluginData;
+}
+
+/**
+ * Get the string after a colon for a needle.
+ * String will end at new line.
+ *
+ * @param {string} haystack The content to search in.
+ * @param {string} needle The key before the colon.
+ * @return {string} Content after colon
+ */
+function getStringAfterColon(haystack, needle) {
+	if (haystack.includes(`${needle}:`) === false) {
+		return undefined;
+	}
+	return haystack.split(`${needle}:`)[1].split(/\r?\n/)[0].trim();
 }
 
 /**
@@ -25850,18 +25933,20 @@ const { retry } = __nccwpck_require__(6298);
 const { GitHub, getOctokitOptions } = __nccwpck_require__(3030);
 
 // Internal dependencies
-const { removeFiles, downloadZip, extractZip, getPluginVersion, sleep } = __nccwpck_require__(4024);
+const { removeFiles, downloadZip, extractZip, getPluginInfo, sleep } = __nccwpck_require__(4024);
 const { cloneRepo, areFilesChanged, pushRepo, createBranch } = __nccwpck_require__(3374);
 const { createPr, approvePr, mergePr, deleteRef, createRelease } = __nccwpck_require__(8119);
+const { generateComposer, doesComposerExist } = __nccwpck_require__(6805);
 
 async function run() {
 	try {
 		// Action inputs
 		const token = core.getInput('github_token', { required: true });
+		const source = core.getInput('source', { required: true });
+		const composer_installer = core.getInput('composer_installer', { required: true });
 		const approval_token = core.getInput('approval_github_token');
 		const committerUsername = core.getInput('committer_username');
 		const committerEmail = core.getInput('committer_email');
-		const source = core.getInput('source', { required: true });
 
 		// Github envs
 		const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
@@ -25889,9 +25974,16 @@ async function run() {
 		core.info('Extract zip');
 		await extractZip(zip, dir);
 
-		core.info('Get version number');
-		const version = await getPluginVersion(dir);
+		core.info('Get plugin info');
+		const pluginInfo = await getPluginInfo(dir);
+
+		const version = pluginInfo.version;
 		const pVersion = 'v' + version;
+
+		if ((await doesComposerExist(dir)) === false) {
+			core.info('Generate composer file');
+			await generateComposer(dir, composer_installer, owner, repo, pluginInfo);
+		}
 
 		core.info('Check for differences');
 		if (await areFilesChanged(git)) {
