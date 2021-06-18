@@ -9,6 +9,9 @@ inputs:
     source:
         description: 'Download URL for getting plugin source zip.'
         required: true
+    composer_installer:
+        description: 'The composer installer version.'
+        required: true
     approval_github_token:
         description: >
             Secondary token used for auto approving pull requests. Without this token, PR's will not get autoapproved and merged.
