@@ -238,6 +238,7 @@ async function downloadZip(dir, url) {
 			responseType: 'arraybuffer',
 		})
 		.then((result) => {
+			if ( result.status === 204 ) return 204;
 			fs.writeFileSync(file, result.data);
 			return file;
 		})
@@ -25969,10 +25970,16 @@ async function run() {
 		await removeFiles(dir, exceptions);
 
 		core.info('Download zip');
-		const zip = await downloadZip(dir, source);
+		const zipRes = await downloadZip(dir, source);
+
+		// If we recieve a 204 HTTP code, there are no new changes to the plugin.
+		if ( zipRes === 204 ) {
+			console.log('No changes found. Finishing up.');
+			return;
+		}
 
 		core.info('Extract zip');
-		await extractZip(zip, dir);
+		await extractZip(zipRes, dir);
 
 		core.info('Get plugin info');
 		const pluginInfo = await getPluginInfo(dir);
