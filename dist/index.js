@@ -182,8 +182,10 @@ function getGitUrl(token, owner, repo) {
  * Check if files are changed
  * Git add & git status
  */
-async function areFilesChanged(git) {
+async function areFilesChanged(git, exceptions) {
 	await git.add('./*');
+	await simpleGit(workingPath).reset(exceptions);
+
 	const status = await git.status();
 	core.debug('DEBUG: List of differences spotted in the repository');
 	core.debug(JSON.stringify(status, null, 2));
@@ -25973,7 +25975,7 @@ async function run() {
 		const zipRes = await downloadZip(dir, source);
 
 		// If we recieve a 204 HTTP code, there are no new changes to the plugin.
-		if ( zipRes === 204 ) {
+		if (zipRes === 204) {
 			console.log('No changes found. Finishing up.');
 			return;
 		}
@@ -25993,7 +25995,7 @@ async function run() {
 		}
 
 		core.info('Check for differences');
-		if (await areFilesChanged(git)) {
+		if (await areFilesChanged(git, exceptions)) {
 			core.info(`Creating branch`);
 			const newBranch = `release/v${version}`;
 			const commitMessage = `Updated plugin to version: ${version}`;
