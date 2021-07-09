@@ -142,7 +142,6 @@ const core = __nccwpck_require__(2186);
 
 module.exports = {
 	cloneRepo,
-	commitRepo,
 	pushRepo,
 	areFilesChanged,
 	createBranch,
@@ -25939,7 +25938,7 @@ const { GitHub, getOctokitOptions } = __nccwpck_require__(3030);
 
 // Internal dependencies
 const { removeFiles, downloadZip, extractZip, getPluginInfo, sleep } = __nccwpck_require__(4024);
-const { cloneRepo, areFilesChanged, commitRepo, pushRepo, createBranch } = __nccwpck_require__(3374);
+const { cloneRepo, areFilesChanged, pushRepo, createBranch } = __nccwpck_require__(3374);
 const { createPr, approvePr, mergePr, deleteRef, createRelease } = __nccwpck_require__(8119);
 const { generateComposer, doesComposerExist } = __nccwpck_require__(6805);
 
