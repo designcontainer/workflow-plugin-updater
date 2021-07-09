@@ -170,15 +170,6 @@ function getGitUrl(token, owner, repo) {
 /**
  * Git push
  */
-async function commitRepo(message, committerUsername, committerEmail, git) {
-	await git.addConfig('user.name', committerUsername);
-	await git.addConfig('user.email', committerEmail);
-	await git.commit(message);
-}
-
-/**
- * Git push
- */
 async function pushRepo(token, owner, repo, branchName, git) {
 	const url = getGitUrl(token, owner, repo);
 	await git.addRemote('auth', url);
@@ -25979,6 +25970,8 @@ async function run() {
 
 		core.info('Clone repo and cleanup repo');
 		const git = simpleGit({ baseDir: dir });
+		await git.addConfig('user.name', committerUsername);
+		await git.addConfig('user.email', committerEmail);
 		await cloneRepo(dir, owner, repo, token, git);
 		await removeFiles(dir, exceptions);
 
@@ -26009,13 +26002,9 @@ async function run() {
 				repo,
 				pluginInfo
 			);
+			core.info(`Commiting composer file: ${composerFile}`);
 			await git.add(composerFile);
-			await commitRepo(
-				'Feat: Generated Composer file',
-				committerUsername,
-				committerEmail,
-				git
-			);
+			await git.commit('Feat: Generated Composer file');
 		}
 
 		core.info('Check for differences');
@@ -26026,7 +26015,7 @@ async function run() {
 			await createBranch(newBranch, git);
 
 			core.info(`Pushing to ${newBranch}.`);
-			await commitRepo(commitMessage, committerUsername, committerEmail, git);
+			await git.commit(commitMessage);
 			await pushRepo(token, owner, repo, newBranch, git);
 			core.info('Creating Pull request');
 			const pr = await createPr(myOctokit, owner, repo, commitMessage, newBranch, branch);
