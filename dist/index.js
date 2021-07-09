@@ -102,6 +102,8 @@ async function doesComposerExist(dir) {
 
 /**
  * Generate composer file
+ *
+ * @return string Composer file path
  */
 async function generateComposer(dir, installer, owner, repo, p) {
 	const file = path.join(dir, 'composer.json');
@@ -127,6 +129,7 @@ async function generateComposer(dir, installer, owner, repo, p) {
 
 	json = JSON.stringify(composer, null, 2);
 	fs.writeFileSync(file, json);
+	return file;
 }
 
 
@@ -25991,14 +25994,22 @@ async function run() {
 
 		if ((await doesComposerExist(dir)) === false) {
 			core.info('Generate composer file');
-			await generateComposer(dir, composer_installer, owner, repo, pluginInfo);
+			const composerFile = await generateComposer(
+				dir,
+				composer_installer,
+				owner,
+				repo,
+				pluginInfo
+			);
+			await git.add(composerFile);
+			await git.commit('Feat: Generated Composer file');
 		}
 
 		core.info('Check for differences');
 		if (await areFilesChanged(git, exceptions)) {
 			core.info(`Creating branch`);
 			const newBranch = `release/v${version}`;
-			const commitMessage = `Updated plugin to version: ${version}`;
+			const commitMessage = `Chore: Updated plugin to version: ${version}`;
 			await createBranch(newBranch, git);
 
 			core.info(`Pushing to ${newBranch}.`);

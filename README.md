@@ -27,7 +27,7 @@ jobs:
         steps:
             - name: Checkout repository
               uses: actions/checkout@v2
-            - name: Update plugin from soruce
+            - name: Update plugin from source
               uses: designcontainer/workflow-plugin-updater@master
               with:
                   github_token: ${{ secrets.BOT_TOKEN }}
