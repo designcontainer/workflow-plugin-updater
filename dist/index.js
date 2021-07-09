@@ -142,6 +142,7 @@ const core = __nccwpck_require__(2186);
 
 module.exports = {
 	cloneRepo,
+	commitRepo,
 	pushRepo,
 	areFilesChanged,
 	createBranch,
@@ -156,23 +157,30 @@ async function cloneRepo(dir, owner, repo, token, git) {
 }
 
 /**
+ *
+ * @param {string} token GitHub gpg token.
+ * @param {string} owner Repo user/owner.
+ * @param {string} repo The GitHub Repository.
+ * @returns {string} URL.
+ */
+function getGitUrl(token, owner, repo) {
+	return `https://${token}@github.com/${owner}/${repo}.git`;
+}
+
+/**
  * Git push
  */
-async function pushRepo(
-	token,
-	owner,
-	repo,
-	branchName,
-	message,
-	committerUsername,
-	committerEmail,
-	git
-) {
-	const url = getGitUrl(token, owner, repo);
-
+async function commitRepo(message, committerUsername, committerEmail, git) {
 	await git.addConfig('user.name', committerUsername);
 	await git.addConfig('user.email', committerEmail);
 	await git.commit(message);
+}
+
+/**
+ * Git push
+ */
+async function pushRepo(token, owner, repo, branchName, git) {
+	const url = getGitUrl(token, owner, repo);
 	await git.addRemote('auth', url);
 	await git.push(['-u', 'auth', branchName]);
 }
@@ -26002,7 +26010,12 @@ async function run() {
 				pluginInfo
 			);
 			await git.add(composerFile);
-			await git.commit('Feat: Generated Composer file');
+			await commitRepo(
+				'Feat: Generated Composer file',
+				committerUsername,
+				committerEmail,
+				git
+			);
 		}
 
 		core.info('Check for differences');
@@ -26013,16 +26026,8 @@ async function run() {
 			await createBranch(newBranch, git);
 
 			core.info(`Pushing to ${newBranch}.`);
-			await pushRepo(
-				token,
-				owner,
-				repo,
-				newBranch,
-				commitMessage,
-				committerUsername,
-				committerEmail,
-				git
-			);
+			await commitRepo(commitMessage, committerUsername, committerEmail, git);
+			await pushRepo(token, owner, repo, newBranch, git);
 			core.info('Creating Pull request');
 			const pr = await createPr(myOctokit, owner, repo, commitMessage, newBranch, branch);
 
