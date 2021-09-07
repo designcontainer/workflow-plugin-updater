@@ -200,7 +200,7 @@ async function areFilesChanged(git, exceptions) {
 async function doesTagExist(git, tag) {
 	const tags = await git.tags();
 	console.log(tags);
-	return tags.includes(tag);
+	return tags.all.includes(tag);
 }
 
 /**
