@@ -141,6 +141,7 @@ module.exports = {
 	cloneRepo,
 	pushRepo,
 	areFilesChanged,
+	doesTagExist,
 	createBranch,
 };
 
@@ -191,6 +192,15 @@ async function areFilesChanged(git, exceptions) {
 	core.debug(JSON.stringify(status, null, 2));
 
 	return status.files.length > 0;
+}
+
+/**
+ * Check wether a tag already exists in a given repo.
+ */
+async function doesTagExist(git, tag) {
+	const tags = await git.tags();
+	console.log(tags);
+	return tags.includes(tag);
 }
 
 /**
@@ -25937,7 +25947,7 @@ const { GitHub, getOctokitOptions } = __nccwpck_require__(3030);
 
 // Internal dependencies
 const { removeFiles, downloadZip, extractZip, getPluginInfo, sleep } = __nccwpck_require__(4024);
-const { cloneRepo, areFilesChanged, pushRepo, createBranch } = __nccwpck_require__(3374);
+const { cloneRepo, areFilesChanged, doesTagExist, pushRepo, createBranch } = __nccwpck_require__(3374);
 const { createPr, approvePr, mergePr, deleteRef, createRelease } = __nccwpck_require__(8119);
 const { generateComposer, doesComposerExist } = __nccwpck_require__(6805);
 
@@ -25995,7 +26005,10 @@ async function run() {
 		}
 
 		core.info('Check for differences');
-		if (await areFilesChanged(git, exceptions)) {
+		if (
+			(await areFilesChanged(git, exceptions)) &&
+			(await doesTagExist(git, pVersion)) === false
+		) {
 			core.info(`Creating branch`);
 			const newBranch = `release/v${version}`;
 			const commitMessage = `Updated plugin to version: ${version}`;
