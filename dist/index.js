@@ -25942,7 +25942,7 @@ const { GitHub, getOctokitOptions } = __nccwpck_require__(3030);
 
 // Internal dependencies
 const { removeFiles, downloadZip, extractZip, getPluginInfo, sleep } = __nccwpck_require__(4024);
-const { cloneRepo, areFilesChanged, doesTagExist, pushRepo, createBranch } = __nccwpck_require__(3374);
+const { cloneRepo, doesTagExist, pushRepo, createBranch } = __nccwpck_require__(3374);
 const { createPr, approvePr, mergePr, deleteRef, createRelease } = __nccwpck_require__(8119);
 const { generateComposer, doesComposerExist, isOrgComposer } = __nccwpck_require__(6805);
 
