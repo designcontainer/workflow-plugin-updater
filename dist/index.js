@@ -25985,7 +25985,8 @@ async function run() {
 
 		const octokit = GitHub.plugin(retry);
 		const myOctokit = new octokit(getOctokitOptions(token));
-		const exceptions = ['.git', '.github', 'composer.json']; // Files that shouldn't be touched
+		const removeExceptions = ['.git', '.github', 'composer.json']; // Files that shouldn't be removed
+		const commitExceptions = ['.git', '.github']; // Files that shouldn't be committed
 
 		core.startGroup('Fetching latest plugin');
 
@@ -25997,7 +25998,7 @@ async function run() {
 		core.info('Clone repo and cleanup repo');
 		const git = simpleGit({ baseDir: dir });
 		await cloneRepo(dir, owner, repo, token, git);
-		await removeFiles(dir, exceptions);
+		await removeFiles(dir, removeExceptions);
 
 		core.info('Download zip');
 		const zipRes = await downloadZip(dir, source);
@@ -26029,7 +26030,7 @@ async function run() {
 		}
 
 		core.info('Check for differences');
-		if ((await areFilesChanged(git, exceptions)) && (await doesTagExist(git, pVersion)) === false) {
+		if ((await areFilesChanged(git, commitExceptions)) && (await doesTagExist(git, pVersion)) === false) {
 			core.info(`Creating branch`);
 			const newBranch = `release/v${version}`;
 			const commitMessage = `Updated plugin to version: ${version}`;
