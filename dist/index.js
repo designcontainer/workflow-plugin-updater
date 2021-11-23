@@ -153,12 +153,13 @@ async function generateComposer(dir, installer, owner, repo, p) {
 /***/ 3374:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+const path = __nccwpck_require__(5622);
 const core = __nccwpck_require__(2186);
+const { isOrgComposer } = __nccwpck_require__(6805);
 
 module.exports = {
 	cloneRepo,
 	pushRepo,
-	areFilesChanged,
 	doesTagExist,
 	createBranch,
 };
@@ -174,16 +175,7 @@ async function cloneRepo(dir, owner, repo, token, git) {
 /**
  * Git push
  */
-async function pushRepo(
-	token,
-	owner,
-	repo,
-	branchName,
-	message,
-	committerUsername,
-	committerEmail,
-	git
-) {
+async function pushRepo(token, owner, repo, branchName, message, committerUsername, committerEmail, git) {
 	const url = getGitUrl(token, owner, repo);
 
 	await git.addConfig('user.name', committerUsername);
@@ -195,21 +187,6 @@ async function pushRepo(
 
 function getGitUrl(token, owner, repo) {
 	return `https://${token}@github.com/${owner}/${repo}.git`;
-}
-
-/**
- * Check if files are changed
- * Git add & git status
- */
-async function areFilesChanged(git, exceptions) {
-	await git.add('./*');
-	await git.reset(exceptions);
-
-	const status = await git.status();
-	core.debug('DEBUG: List of differences spotted in the repository');
-	core.debug(JSON.stringify(status, null, 2));
-
-	return status.files.length > 0;
 }
 
 /**
@@ -25985,8 +25962,7 @@ async function run() {
 
 		const octokit = GitHub.plugin(retry);
 		const myOctokit = new octokit(getOctokitOptions(token));
-		const removeExceptions = ['.git', '.github', 'composer.json']; // Files that shouldn't be removed
-		const commitExceptions = ['.git', '.github']; // Files that shouldn't be committed
+		const exceptions = ['.git', '.github', 'composer.json']; // Files that shouldn't be touched
 
 		core.startGroup('Fetching latest plugin');
 
@@ -25998,7 +25974,7 @@ async function run() {
 		core.info('Clone repo and cleanup repo');
 		const git = simpleGit({ baseDir: dir });
 		await cloneRepo(dir, owner, repo, token, git);
-		await removeFiles(dir, removeExceptions);
+		await removeFiles(dir, exceptions);
 
 		core.info('Download zip');
 		const zipRes = await downloadZip(dir, source);
@@ -26029,8 +26005,19 @@ async function run() {
 			await generateComposer(dir, composer_installer, owner, repo, pluginInfo);
 		}
 
-		core.info('Check for differences');
-		if ((await areFilesChanged(git, commitExceptions)) && (await doesTagExist(git, pVersion)) === false) {
+		core.info('Add and check for differences');
+		await git.add('./*');
+		await git.reset(exceptions);
+		// This is to make sure we don't commit composer files outside the org.
+		if (await isOrgComposer(dir, owner)) {
+			await git.add(path.join(dir, 'composer.json'));
+		}
+
+		const status = await git.status();
+		core.debug('DEBUG: List of differences spotted in the repository');
+		core.debug(JSON.stringify(status, null, 2));
+
+		if (status.files.length > 0 && (await doesTagExist(git, pVersion)) === false) {
 			core.info(`Creating branch`);
 			const newBranch = `release/v${version}`;
 			const commitMessage = `Updated plugin to version: ${version}`;
