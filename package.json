@@ -1,6 +1,6 @@
 {
 	"name": "workflow-plugin-updater",
-	"version": "1.2.2",
+	"version": "1.2.3",
 	"description": "A workflow for updating/syncing premium plugins automatically in a repo.",
 	"main": "lib/index.js",
 	"scripts": {
